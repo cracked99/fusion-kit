@@ -7,6 +7,16 @@ All notable changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.21] - 2025-10-25
+
+### Added
+
+- Support for Factory Droid AI coding agent.
+  - Added to AGENT_CONFIG with `.factory/` folder structure
+  - Command files generated in `.factory/commands/` directory
+  - Integrated into release packaging and agent context update scripts
+  - Full support in both bash and PowerShell scripts
+
 ## [0.0.20] - 2025-10-14
 
 ### Added

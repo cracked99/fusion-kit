@@ -1,0 +1,57 @@
+"""Persistence layer for multi-agent framework."""
+
+from fusion_kit.persistence.init_db import init_db, get_async_session_factory, verify_db
+from fusion_kit.persistence.models import (
+    Base,
+    Agent,
+    Task,
+    Workspace,
+    Workflow,
+    Event,
+    Message,
+    Capability,
+    Project,
+    ResourceMetrics,
+    ProviderConfig,
+)
+from fusion_kit.persistence.repositories import (
+    UnitOfWork,
+    AgentRepository,
+    TaskRepository,
+    WorkspaceRepository,
+    WorkflowRepository,
+    EventRepository,
+    MessageRepository,
+    CapabilityRepository,
+    ProjectRepository,
+    ResourceMetricsRepository,
+    ProviderConfigRepository,
+)
+
+__all__ = [
+    "init_db",
+    "get_async_session_factory",
+    "verify_db",
+    "Base",
+    "Agent",
+    "Task",
+    "Workspace",
+    "Workflow",
+    "Event",
+    "Message",
+    "Capability",
+    "Project",
+    "ResourceMetrics",
+    "ProviderConfig",
+    "UnitOfWork",
+    "AgentRepository",
+    "TaskRepository",
+    "WorkspaceRepository",
+    "WorkflowRepository",
+    "EventRepository",
+    "MessageRepository",
+    "CapabilityRepository",
+    "ProjectRepository",
+    "ResourceMetricsRepository",
+    "ProviderConfigRepository",
+]

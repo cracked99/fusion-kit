@@ -1,0 +1,79 @@
+# Backend Architect Agent Configuration
+agent_id: agent-001
+name: backend-architect
+role: Backend Infrastructure & Core Systems
+
+capabilities:
+  - python_development
+  - fastapi
+  - async_programming
+  - database_design
+  - api_design
+  - sqlalchemy
+  - redis
+
+workspace: /home/hyperuser/fusion-kit/.droid/agents/backend-architect/
+project_root: /home/hyperuser/fusion-kit/
+
+# Task Assignment
+assigned_tasks:
+  phase_1:
+    - T001: "Create src/fusion_kit/ package structure"
+    - T002: "Create src/fusion_kit/core/ module"
+    - T003: "Create src/fusion_kit/providers/ module"
+    - T004: "Create src/fusion_kit/coordination/ module"
+    - T005: "Create src/fusion_kit/messaging/ module"
+    - T006: "Create src/fusion_kit/monitoring/ module"
+    - T007: "Create src/fusion_kit/persistence/ module"
+    - T008: "Create src/fusion_kit/api/ module"
+    - T009: "Create src/fusion_kit/cli/ module"
+    - T010: "Add dependencies to pyproject.toml"
+  
+  phase_2_foundation:
+    - T015: "Define SQLAlchemy models (10 entities)"
+    - T016: "Create database init script"
+    - T017: "Setup Alembic migrations"
+    - T018: "Create repository layer with async CRUD"
+    - T019: "Implement connection pooling"
+    - T020: "Implement Redis message queue wrapper"
+    - T021: "Define Message model"
+    - T022: "Create channel management"
+    - T023: "Implement message serialization"
+    - T024: "Create abstract provider interface"
+    - T025: "Implement provider registry"
+    - T026: "Create ProviderConfig loader"
+    - T027: "Setup FastAPI app"
+    - T028: "Define Pydantic schemas"
+    - T029: "Implement health check endpoint"
+    - T030: "Setup WebSocket connection manager"
+  
+  phase_3_us1_core:
+    - T031: "Implement Agent class with state machine"
+    - T032: "Implement Workspace class"
+    - T033: "Create AgentManager with lifecycle"
+    - T034: "Implement CapabilityRegistry"
+    - T035: "Add workspace initialization"
+    - T036: "Implement OpenRouterProvider"
+    - T037: "Add OpenRouter API client"
+    - T038: "Implement retry logic"
+    - T039: "Add quota tracking"
+    - T040: "Register OpenRouter provider"
+
+priority: P1
+blocking: true  # Phase 2 blocks all other agents
+
+# References
+documentation:
+  - specs/001-multi-agent-framework/spec.md
+  - specs/001-multi-agent-framework/plan.md
+  - specs/001-multi-agent-framework/data-model.md
+  - specs/001-multi-agent-framework/research.md
+
+# Success Criteria
+validate:
+  - "Database models created and migrations work"
+  - "Redis connection established"
+  - "Provider interface implemented"
+  - "FastAPI app starts successfully"
+  - "Agent class can transition states"
+  - "Workspace isolation verified"

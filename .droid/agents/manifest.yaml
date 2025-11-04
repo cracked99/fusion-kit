@@ -1,0 +1,211 @@
+# Multi-Agent Build Orchestration Manifest
+# Purpose: Coordinate specialized droid agents to implement multi-agent framework
+# Based on: specs/001-multi-agent-framework/tasks.md
+
+version: 1.0.0
+project: fusion-kit-multi-agent-framework
+branch: 001-multi-agent-framework
+
+# Agent Definitions
+agents:
+  
+  # Agent 1: Backend Architect
+  - name: backend-architect
+    id: agent-001
+    role: Backend Infrastructure & Core Systems
+    capabilities:
+      - python_development
+      - fastapi
+      - async_programming
+      - database_design
+      - api_design
+    workspace: .droid/agents/backend-architect/
+    assigned_phases:
+      - Phase 1 (Setup - Backend)
+      - Phase 2 (Foundation - All)
+      - Phase 3 (US1 - Core Agent Management)
+    assigned_tasks:
+      - T001-T010  # Setup backend structure
+      - T015-T030  # Foundation: DB, messaging, providers, API
+      - T031-T040  # US1: Agent core, workspace, OpenRouter
+    priority: P1  # Critical path
+    dependencies: []  # No dependencies, starts first
+  
+  # Agent 2: Frontend Developer
+  - name: frontend-developer
+    id: agent-002
+    role: Dashboard & UI Components
+    capabilities:
+      - react_development
+      - typescript
+      - ui_components
+      - real_time_websockets
+      - data_visualization
+    workspace: .droid/agents/frontend-developer/
+    assigned_phases:
+      - Phase 1 (Setup - Frontend)
+      - Phase 4 (US2 - Dashboard)
+      - Phase 6 (US4 - Visualization)
+    assigned_tasks:
+      - T011-T012  # Setup React project
+      - T071-T083  # US2: Dashboard components
+      - T111-T123  # US4: Workflow editor
+    priority: P2
+    dependencies: [backend-architect]  # Needs API endpoints from backend
+  
+  # Agent 3: Integration Engineer
+  - name: integration-engineer
+    id: agent-003
+    role: API Endpoints & CLI Commands
+    capabilities:
+      - api_development
+      - cli_development
+      - integration_testing
+      - rest_apis
+    workspace: .droid/agents/integration-engineer/
+    assigned_phases:
+      - Phase 3 (US1 - APIs & CLI)
+      - Phase 5 (US3 - Workflow APIs)
+    assigned_tasks:
+      - T041-T055  # US1: Agent API endpoints, CLI, logging
+      - T087-T110  # US3: Task/Workflow APIs
+    priority: P2
+    dependencies: [backend-architect]  # Needs core models and services
+  
+  # Agent 4: Workflow Specialist
+  - name: workflow-specialist
+    id: agent-004
+    role: Task Coordination & Workflows
+    capabilities:
+      - workflow_engines
+      - task_scheduling
+      - dependency_resolution
+      - message_queuing
+    workspace: .droid/agents/workflow-specialist/
+    assigned_phases:
+      - Phase 5 (US3 - Coordination)
+    assigned_tasks:
+      - T084-T086  # Task management
+      - T091-T105  # Delegation, dependencies, workflow engine
+      - T098-T101  # Inter-agent messaging
+    priority: P3
+    dependencies: [backend-architect, integration-engineer]
+  
+  # Agent 5: Quality Assurance
+  - name: qa-engineer
+    id: agent-005
+    role: Testing & Validation
+    capabilities:
+      - pytest
+      - integration_testing
+      - contract_testing
+      - quality_assurance
+    workspace: .droid/agents/qa-engineer/
+    assigned_phases:
+      - Phase 7 (US5 - Compatibility Testing)
+      - Phase 8 (Testing & Validation)
+    assigned_tasks:
+      - T124-T135  # US5: Backward compatibility
+      - T152-T163  # Phase 8: Tests, validation, deployment
+    priority: P3
+    dependencies: [backend-architect, frontend-developer, integration-engineer]
+  
+  # Agent 6: DevOps Engineer
+  - name: devops-engineer
+    id: agent-006
+    role: Infrastructure & Deployment
+    capabilities:
+      - docker
+      - deployment
+      - monitoring_setup
+      - documentation
+    workspace: .droid/agents/devops-engineer/
+    assigned_phases:
+      - Phase 1 (Setup - Infrastructure)
+      - Phase 8 (Polish - Deployment)
+    assigned_tasks:
+      - T013-T014  # Workspace setup, env config
+      - T148-T151  # Documentation
+      - T163-T164  # Docker, changelog
+    priority: P4
+    dependencies: []  # Can work in parallel on infrastructure
+
+# Coordination Strategy
+coordination:
+  
+  # Phase 1: Parallel Setup
+  phase_1:
+    agents: [backend-architect, frontend-developer, devops-engineer]
+    mode: parallel
+    description: "All agents work on setup simultaneously"
+  
+  # Phase 2: Foundation (Sequential - CRITICAL)
+  phase_2:
+    agents: [backend-architect]
+    mode: sequential
+    blocking: true
+    description: "Backend architect completes foundation before others can proceed"
+    checkpoint: "Database, Redis, Provider system, API framework ready"
+  
+  # Phase 3: US1 Implementation (Parallel after foundation)
+  phase_3:
+    agents: [backend-architect, integration-engineer]
+    mode: parallel
+    description: "Backend builds core, Integration builds APIs/CLI"
+    checkpoint: "Agent spawning, lifecycle management, workspace isolation working"
+  
+  # Phase 4: US2 Dashboard (Frontend with backend support)
+  phase_4:
+    agents: [backend-architect, frontend-developer]
+    mode: parallel
+    description: "Backend provides metrics/events API, Frontend builds dashboard"
+    checkpoint: "Real-time dashboard showing agent states and metrics"
+  
+  # Phase 5: US3 Workflows (Workflow specialist leads)
+  phase_5:
+    agents: [workflow-specialist, integration-engineer]
+    mode: parallel
+    description: "Workflow engine + API endpoints"
+    checkpoint: "Multi-agent workflows with dependencies functional"
+  
+  # Phase 6: US4 Visualization (Frontend)
+  phase_6:
+    agents: [frontend-developer]
+    mode: sequential
+    description: "Visual workflow editor"
+    checkpoint: "Drag-and-drop workflow designer working"
+  
+  # Phase 7 & 8: Testing & Polish (All agents validate)
+  phase_7_8:
+    agents: [qa-engineer, devops-engineer, backend-architect]
+    mode: parallel
+    description: "Testing, validation, documentation, deployment"
+    checkpoint: "All tests pass, documentation complete, ready for deployment"
+
+# Communication Channels
+communication:
+  # Agents share updates through git commits and status files
+  status_directory: .droid/status/
+  message_format: json
+  update_interval: "per-task-completion"
+  
+  # Inter-agent coordination
+  coordination_file: .droid/coordination.json
+  task_assignments: .droid/task-assignments.json
+  progress_tracking: .droid/progress.json
+
+# Success Criteria (from spec.md)
+success_criteria:
+  - SC-001: "99.9% reliability for spawn/pause/resume/terminate"
+  - SC-002: "100% workspace isolation"
+  - SC-003: "10 concurrent agents without degradation"
+  - SC-016: "100% regression tests pass"
+  - SC-017: "Zero configuration changes for migration"
+  - SC-018: "Less than 5% performance overhead"
+
+# Execution Instructions
+execution:
+  start_command: "droid orchestrate --manifest .droid/agents/manifest.yaml"
+  mode: "autonomous"
+  checkpoint_validation: "required"
+  failure_handling: "pause-and-notify"

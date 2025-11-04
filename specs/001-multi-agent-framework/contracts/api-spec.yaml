@@ -1,0 +1,745 @@
+openapi: 3.0.3
+info:
+  title: Multi-Agent Orchestration Framework API
+  description: REST API for managing agents, tasks, workflows, and monitoring in the fusion-kit multi-agent framework
+  version: 1.0.0
+  contact:
+    name: Fusion Kit Team
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+tags:
+  - name: agents
+    description: Agent lifecycle management
+  - name: tasks
+    description: Task coordination and assignment
+  - name: workflows
+    description: Workflow creation and execution
+  - name: events
+    description: Real-time event streaming
+  - name: providers
+    description: LLM provider configuration
+
+paths:
+  # ===== AGENTS =====
+  /agents:
+    get:
+      tags: [agents]
+      summary: List all agents
+      description: Retrieve all agents with optional filtering by state or project
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [spawning, idle, working, paused, error, terminated]
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+                  total:
+                    type: integer
+    
+    post:
+      tags: [agents]
+      summary: Spawn new agent
+      description: Create and initialize a new agent with specified capabilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreate'
+      responses:
+        '201':
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  
+  /agents/{agent_id}:
+    get:
+      tags: [agents]
+      summary: Get agent details
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    patch:
+      tags: [agents]
+      summary: Update agent state
+      description: Pause, resume, or update agent configuration
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [pause, resume, update_config]
+                config:
+                  type: object
+      responses:
+        '200':
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+    
+    delete:
+      tags: [agents]
+      summary: Terminate agent
+      description: Gracefully shut down agent and release resources
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+      responses:
+        '204':
+          description: Agent terminated
+        '404':
+          $ref: '#/components/responses/NotFound'
+  
+  /agents/{agent_id}/metrics:
+    get:
+      tags: [agents]
+      summary: Get agent resource metrics
+      parameters:
+        - $ref: '#/components/parameters/AgentId'
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Resource metrics history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metrics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResourceMetrics'
+  
+  # ===== TASKS =====
+  /tasks:
+    get:
+      tags: [tasks]
+      summary: List tasks
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [queued, assigned, running, completed, failed, cancelled]
+        - name: agent_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: workflow_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+    
+    post:
+      tags: [tasks]
+      summary: Create task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+  
+  /tasks/{task_id}:
+    get:
+      tags: [tasks]
+      summary: Get task details
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+    
+    patch:
+      tags: [tasks]
+      summary: Update task
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum: [cancelled]
+                priority:
+                  type: integer
+      responses:
+        '200':
+          description: Task updated
+  
+  # ===== WORKFLOWS =====
+  /workflows:
+    get:
+      tags: [workflows]
+      summary: List workflows
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [draft, validating, ready, running, completed, failed, cancelled]
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflows:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+    
+    post:
+      tags: [workflows]
+      summary: Create workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowCreate'
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+  
+  /workflows/{workflow_id}:
+    get:
+      tags: [workflows]
+      summary: Get workflow details
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+  
+  /workflows/{workflow_id}/start:
+    post:
+      tags: [workflows]
+      summary: Start workflow execution
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Workflow started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+  
+  /workflows/{workflow_id}/validate:
+    post:
+      tags: [workflows]
+      summary: Validate workflow DAG
+      description: Check for cycles and invalid dependencies
+      parameters:
+        - $ref: '#/components/parameters/WorkflowId'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  
+  # ===== EVENTS =====
+  /events:
+    get:
+      tags: [events]
+      summary: Query event log
+      parameters:
+        - name: event_type
+          in: query
+          schema:
+            type: string
+        - name: agent_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [debug, info, warning, error, critical]
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Event log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+  
+  /ws/events:
+    get:
+      tags: [events]
+      summary: WebSocket event stream
+      description: Real-time event streaming via WebSocket connection
+      responses:
+        '101':
+          description: WebSocket connection established
+  
+  # ===== PROVIDERS =====
+  /providers:
+    get:
+      tags: [providers]
+      summary: List LLM providers
+      responses:
+        '200':
+          description: List of configured providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProviderConfig'
+    
+    post:
+      tags: [providers]
+      summary: Add LLM provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderConfigCreate'
+      responses:
+        '201':
+          description: Provider added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConfig'
+
+components:
+  parameters:
+    AgentId:
+      name: agent_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    
+    WorkflowId:
+      name: workflow_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  
+  schemas:
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        state:
+          type: string
+          enum: [spawning, idle, working, paused, error, terminated]
+        capabilities:
+          type: array
+          items:
+            type: string
+        workspace_path:
+          type: string
+        provider_id:
+          type: string
+          format: uuid
+        model_name:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_heartbeat:
+          type: string
+          format: date-time
+    
+    AgentCreate:
+      type: object
+      required: [name, capabilities, provider_id, model_name, project_id]
+      properties:
+        name:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        provider_id:
+          type: string
+          format: uuid
+        model_name:
+          type: string
+        project_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+    
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        priority:
+          type: integer
+        required_capabilities:
+          type: array
+          items:
+            type: string
+        state:
+          type: string
+          enum: [queued, assigned, running, completed, failed, cancelled]
+        dependencies:
+          type: array
+          items:
+            type: string
+            format: uuid
+        workflow_id:
+          type: string
+          format: uuid
+          nullable: true
+        queued_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    
+    TaskCreate:
+      type: object
+      required: [name, description, required_capabilities]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        required_capabilities:
+          type: array
+          items:
+            type: string
+        priority:
+          type: integer
+          default: 0
+        dependencies:
+          type: array
+          items:
+            type: string
+            format: uuid
+        workflow_id:
+          type: string
+          format: uuid
+        input_artifacts:
+          type: object
+    
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: string
+          enum: [draft, validating, ready, running, completed, failed, cancelled]
+        dag_definition:
+          type: object
+          description: Workflow DAG structure
+        project_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    
+    WorkflowCreate:
+      type: object
+      required: [name, dag_definition, project_id]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        dag_definition:
+          type: object
+        execution_parameters:
+          type: object
+        project_id:
+          type: string
+          format: uuid
+    
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        event_type:
+          type: string
+        severity:
+          type: string
+          enum: [debug, info, warning, error, critical]
+        source_agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        message:
+          type: string
+        data:
+          type: object
+    
+    ResourceMetrics:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        cpu_percent:
+          type: number
+          format: float
+        memory_mb:
+          type: number
+          format: float
+        api_calls_count:
+          type: integer
+        api_tokens_used:
+          type: integer
+    
+    ProviderConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        api_endpoint:
+          type: string
+        model_catalog:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+    
+    ProviderConfigCreate:
+      type: object
+      required: [name, api_endpoint, auth_type, credentials]
+      properties:
+        name:
+          type: string
+        api_endpoint:
+          type: string
+        auth_type:
+          type: string
+        credentials:
+          type: object
+        model_catalog:
+          type: array
+          items:
+            type: string
+  
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: array
+                items:
+                  type: string
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              resource_type:
+                type: string
+              resource_id:
+                type: string
+    
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              trace_id:
+                type: string
